@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Player {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  archived  Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  games     GamePlayer[]
+}
+
+enum GameStatus {
+  ACTIVE
+  FINISHED
+}
+
+model Game {
+  id           String       @id @default(cuid())
+  label        String?
+  playedOn     DateTime     @default(now())
+  defaultBuyIn Int
+  status       GameStatus   @default(ACTIVE)
+  viewSlug     String       @unique
+  createdAt    DateTime     @default(now())
+  finishedAt   DateTime?
+  players      GamePlayer[]
+}
+
+model GamePlayer {
+  id         String   @id @default(cuid())
+  gameId     String
+  playerId   String
+  finalStack Int?
+  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player     Player   @relation(fields: [playerId], references: [id])
+  buyIns     BuyIn[]
+
+  @@unique([gameId, playerId])
+}
+
+model BuyIn {
+  id           String     @id @default(cuid())
+  gamePlayerId String
+  amount       Int
+  createdAt    DateTime   @default(now())
+  gamePlayer   GamePlayer @relation(fields: [gamePlayerId], references: [id], onDelete: Cascade)
+}
