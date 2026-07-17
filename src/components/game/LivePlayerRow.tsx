@@ -80,21 +80,21 @@ export function LivePlayerRow({ gamePlayerId, name, totalInCents, rebuys, defaul
                   return result
                 })
               }}
-              className="flex-1 rounded-xl bg-emerald-700 py-2.5 text-sm font-semibold text-white active:bg-emerald-800 disabled:opacity-50"
+              className="flex-1 min-h-11 rounded-xl bg-emerald-700 py-2.5 text-sm font-semibold text-white active:bg-emerald-800 disabled:opacity-50"
             >
               Rebuy
             </button>
             <button
               disabled={pending}
               onClick={() => run(() => undoLastBuyIn(gamePlayerId))}
-              className="flex-1 rounded-xl border border-neutral-700 py-2.5 text-sm font-medium text-neutral-300 active:bg-neutral-800 disabled:opacity-50"
+              className="flex-1 min-h-11 rounded-xl border border-neutral-700 py-2.5 text-sm font-medium text-neutral-300 active:bg-neutral-800 disabled:opacity-50"
             >
               Undo
             </button>
             <button
               disabled={pending}
               onClick={() => run(() => removePlayerFromGame(gamePlayerId))}
-              className="flex-1 rounded-xl border border-red-900/60 py-2.5 text-sm font-medium text-red-400 active:bg-red-950 disabled:opacity-50"
+              className="flex-1 min-h-11 rounded-xl border border-red-900/60 py-2.5 text-sm font-medium text-red-400 active:bg-red-950 disabled:opacity-50"
             >
               Remove
             </button>
