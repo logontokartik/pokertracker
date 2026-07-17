@@ -10,7 +10,7 @@ export function AddPlayerPicker({ gameId, candidates }: Props) {
   if (candidates.length === 0) return null
   return (
     <details className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
-      <summary className="cursor-pointer text-sm text-neutral-400">Add a late arrival</summary>
+      <summary className="flex min-h-11 cursor-pointer items-center text-sm text-neutral-400">Add a late arrival</summary>
       <div className="mt-3 flex flex-wrap gap-2">
         {candidates.map((p) => (
           <button

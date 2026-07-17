@@ -8,7 +8,7 @@ const row = (
 ): ResultRow => ({ name: 'x', totalInCents, rebuys: 0, finalStackCents, profitCents })
 
 describe('sumResultRows', () => {
-  it('sums a balanced finished game to zero profit (the reported "$370" case, in cents)', () => {
+  it('sums a balanced finished game to zero profit (the user manually mis-added this to $370; correctly totals $360)', () => {
     const rows = [
       row(4000, 20000, 16000),
       row(4000, 6000, 2000),

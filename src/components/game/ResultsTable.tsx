@@ -22,6 +22,7 @@ export function sumResultRows(rows: ResultRow[]): { buyIns: number; cashOut: num
 export function ResultsTable({ players }: { players: ResultRow[] }) {
   const sorted = [...players].sort((a, b) => (b.profitCents ?? 0) - (a.profitCents ?? 0))
   const totals = sumResultRows(players)
+  const allCashedOut = players.every((r) => r.finalStackCents !== null)
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -51,16 +52,18 @@ export function ResultsTable({ players }: { players: ResultRow[] }) {
             </tr>
           ))}
         </tbody>
-        <tfoot>
-          <tr className="border-t-2 border-neutral-700 font-semibold text-neutral-200">
-            <td className="p-2">Total</td>
-            <td className="p-2 text-right">{formatCents(totals.buyIns)}</td>
-            <td className="p-2 text-right">{formatCents(totals.cashOut)}</td>
-            <td className={`p-2 text-right ${totals.profit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-              {formatCents(totals.profit)}
-            </td>
-          </tr>
-        </tfoot>
+        {allCashedOut && (
+          <tfoot>
+            <tr className="border-t-2 border-neutral-700 font-semibold text-neutral-200">
+              <td className="p-2">Total</td>
+              <td className="p-2 text-right">{formatCents(totals.buyIns)}</td>
+              <td className="p-2 text-right">{formatCents(totals.cashOut)}</td>
+              <td className={`p-2 text-right ${totals.profit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                {formatCents(totals.profit)}
+              </td>
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   )
