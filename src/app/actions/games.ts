@@ -64,3 +64,78 @@ export async function createGame(
   revalidatePath('/')
   redirect(`/game/${gameId}`)
 }
+
+async function loadActiveGamePlayer(gamePlayerId: string) {
+  const gp = await prisma.gamePlayer.findUnique({
+    where: { id: gamePlayerId },
+    include: { game: true },
+  })
+  if (!gp) return { gp: null, error: 'Player not found' }
+  if (gp.game.status !== 'ACTIVE') return { gp: null, error: 'Game is finished' }
+  return { gp, error: null }
+}
+
+function revalidateGame(game: { id: string; viewSlug: string }) {
+  revalidatePath(`/game/${game.id}`)
+  revalidatePath(`/v/${game.viewSlug}`)
+}
+
+export async function addRebuy(
+  gamePlayerId: string,
+  amountCents?: number
+): Promise<{ error?: string }> {
+  const denied = await guard()
+  if (denied) return denied
+  const { gp, error } = await loadActiveGamePlayer(gamePlayerId)
+  if (!gp) return { error: error! }
+  const amount = amountCents ?? gp.game.defaultBuyIn
+  if (!Number.isInteger(amount) || amount <= 0) return { error: 'Amount must be positive' }
+  await prisma.buyIn.create({ data: { gamePlayerId, amount } })
+  revalidateGame(gp.game)
+  return {}
+}
+
+export async function undoLastBuyIn(gamePlayerId: string): Promise<{ error?: string }> {
+  const denied = await guard()
+  if (denied) return denied
+  const { gp, error } = await loadActiveGamePlayer(gamePlayerId)
+  if (!gp) return { error: error! }
+  const last = await prisma.buyIn.findFirst({
+    where: { gamePlayerId },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+  })
+  if (!last) return { error: 'No buy-ins to undo' }
+  await prisma.buyIn.delete({ where: { id: last.id } })
+  revalidateGame(gp.game)
+  return {}
+}
+
+export async function addPlayerToGame(
+  gameId: string,
+  playerId: string
+): Promise<{ error?: string }> {
+  const denied = await guard()
+  if (denied) return denied
+  const game = await prisma.game.findUnique({ where: { id: gameId } })
+  if (!game) return { error: 'Game not found' }
+  if (game.status !== 'ACTIVE') return { error: 'Game is finished' }
+  await prisma.gamePlayer.create({
+    data: { gameId, playerId, buyIns: { create: { amount: game.defaultBuyIn } } },
+  })
+  revalidateGame(game)
+  return {}
+}
+
+export async function removePlayerFromGame(gamePlayerId: string): Promise<{ error?: string }> {
+  const denied = await guard()
+  if (denied) return denied
+  const { gp, error } = await loadActiveGamePlayer(gamePlayerId)
+  if (!gp) return { error: error! }
+  const buyInCount = await prisma.buyIn.count({ where: { gamePlayerId } })
+  if (buyInCount > 0) {
+    return { error: 'Player has buy-ins — undo them first, or cash them out instead' }
+  }
+  await prisma.gamePlayer.delete({ where: { id: gamePlayerId } })
+  revalidateGame(gp.game)
+  return {}
+}
