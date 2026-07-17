@@ -12,9 +12,11 @@ export function FinishButton({ gameId, warning }: Props) {
       disabled={pending}
       onClick={() => {
         if (warning && !confirm(`${warning}\n\nFinish anyway?`)) return
-        startTransition(async () => { await finishGame(gameId) })
+        startTransition(async () => {
+          await finishGame(gameId)
+        })
       }}
-      className="rounded-lg bg-emerald-600 p-3 font-semibold text-white disabled:opacity-50"
+      className="w-full rounded-xl bg-emerald-600 p-3.5 text-base font-semibold text-white active:bg-emerald-700 disabled:opacity-50"
     >
       Finish game
     </button>

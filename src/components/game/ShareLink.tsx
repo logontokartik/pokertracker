@@ -7,7 +7,7 @@ export function ShareLink({ viewSlug }: { viewSlug: string }) {
   const path = `/v/${viewSlug}`
   return (
     <button
-      className="text-sm text-neutral-400 underline"
+      className="inline-flex min-h-11 items-center text-sm text-neutral-400 underline active:text-neutral-200"
       onClick={async () => {
         await navigator.clipboard.writeText(`${window.location.origin}${path}`)
         setCopied(true)
