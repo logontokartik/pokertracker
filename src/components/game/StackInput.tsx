@@ -2,13 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { setFinalStack } from '@/app/actions/games'
-import { formatCents, parseDollarsToCents } from '@/lib/money'
+import { centsToDollarInput, formatCents, parseDollarsToCents } from '@/lib/money'
 
 type Props = { gamePlayerId: string; name: string; finalStackCents: number | null }
 
 export function StackInput({ gamePlayerId, name, finalStackCents }: Props) {
   const [value, setValue] = useState(
-    finalStackCents === null ? '' : (finalStackCents / 100).toFixed(2).replace(/\.00$/, '')
+    finalStackCents === null ? '' : centsToDollarInput(finalStackCents)
   )
   const [error, setError] = useState<string | null>(null)
   const [, startTransition] = useTransition()

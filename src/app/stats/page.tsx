@@ -16,7 +16,7 @@ export default async function StatsPage() {
     const p = profit(gp)
     if (p === null) continue // never cashed out; excluded rather than counted as a $0 game
     const stat = byPlayer.get(gp.playerId) ?? {
-      name: gp.player.name, games: 0, total: 0, biggestWin: 0, biggestLoss: 0,
+      name: gp.player.name, games: 0, total: 0, biggestWin: p, biggestLoss: p,
     }
     stat.games += 1
     stat.total += p

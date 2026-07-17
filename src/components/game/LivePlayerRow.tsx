@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { addRebuy, undoLastBuyIn } from '@/app/actions/games'
+import { addRebuy, removePlayerFromGame, undoLastBuyIn } from '@/app/actions/games'
 import { formatCents, parseDollarsToCents } from '@/lib/money'
 
 type Props = {
@@ -89,6 +89,13 @@ export function LivePlayerRow({ gamePlayerId, name, totalInCents, rebuys, defaul
             className="rounded-lg border border-neutral-600 px-3 text-neutral-300 disabled:opacity-50"
           >
             Undo
+          </button>
+          <button
+            disabled={pending}
+            onClick={() => run(() => removePlayerFromGame(gamePlayerId))}
+            className="rounded-lg border border-neutral-600 px-3 text-red-400 disabled:opacity-50"
+          >
+            Remove
           </button>
         </div>
       )}

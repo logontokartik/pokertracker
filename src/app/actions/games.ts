@@ -76,6 +76,7 @@ async function loadActiveGamePlayer(gamePlayerId: string) {
 }
 
 function revalidateGame(game: { id: string; viewSlug: string }) {
+  revalidatePath('/')
   revalidatePath(`/game/${game.id}`)
   revalidatePath(`/v/${game.viewSlug}`)
 }

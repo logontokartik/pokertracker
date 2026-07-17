@@ -38,6 +38,13 @@ export function formatCents(cents: number): string {
   return `${sign}$${dollars}.${String(rem).padStart(2, '0')}`
 }
 
+// Plain dollars string for form inputs: 2000 -> "20", 2050 -> "20.50". No floats.
+export function centsToDollarInput(cents: number): string {
+  const dollars = Math.floor(cents / 100)
+  const rem = cents % 100
+  return rem === 0 ? String(dollars) : `${dollars}.${String(rem).padStart(2, '0')}`
+}
+
 // String-based parsing: the input never touches floating point.
 export function parseDollarsToCents(input: string): number | null {
   const cleaned = input.trim().replace(/^\$/, '')

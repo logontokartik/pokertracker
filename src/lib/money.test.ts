@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   totalIn, rebuyCount, profit, totalInPlay, totalCounted,
   allCounted, tableBalance, formatCents, parseDollarsToCents,
+  centsToDollarInput,
   type GamePlayerLike,
 } from '@/lib/money'
 
@@ -104,5 +105,20 @@ describe('parseDollarsToCents', () => {
     expect(cents).toEqual([1, 10, 2030, 1999, 10005])
     expect(cents.reduce((s, c) => s + c, 0)).toBe(14045)
     expect(formatCents(14045)).toBe('$140.45')
+  })
+})
+
+describe('centsToDollarInput', () => {
+  it('formats whole dollars without decimals', () => {
+    expect(centsToDollarInput(2000)).toBe('20')
+  })
+  it('formats cents with two digits', () => {
+    expect(centsToDollarInput(2050)).toBe('20.50')
+  })
+  it('pads sub-ten cents', () => {
+    expect(centsToDollarInput(5)).toBe('0.05')
+  })
+  it('formats zero as a bare 0', () => {
+    expect(centsToDollarInput(0)).toBe('0')
   })
 })
