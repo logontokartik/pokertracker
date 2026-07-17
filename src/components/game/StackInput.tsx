@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { setFinalStack } from '@/app/actions/games'
-import { centsToDollarInput, formatCents, parseDollarsToCents } from '@/lib/money'
+import { centsToDollarInput, parseDollarsToCents } from '@/lib/money'
 
 type Props = { gamePlayerId: string; name: string; finalStackCents: number | null }
 
@@ -31,20 +31,19 @@ export function StackInput({ gamePlayerId, name, finalStackCents }: Props) {
   }
 
   return (
-    <label className="flex items-center gap-2">
-      <span className="flex-1">{name}</span>
-      {error && <span className="text-sm text-red-500">{error}</span>}
-      <input
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={save}
-        inputMode="decimal"
-        placeholder="chips $"
-        className="w-24 rounded-lg border border-neutral-600 bg-transparent p-2 text-right"
-      />
-      {finalStackCents !== null && (
-        <span className="w-14 text-right text-sm text-neutral-400">{formatCents(finalStackCents)}</span>
-      )}
-    </label>
+    <div>
+      <label className="flex items-center gap-3">
+        <span className="flex-1 text-lg font-semibold text-neutral-50">{name}</span>
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={save}
+          inputMode="decimal"
+          placeholder="chips $"
+          className="w-28 rounded-xl border border-neutral-700 bg-neutral-950 p-2.5 text-right text-base text-neutral-100 placeholder:text-neutral-500 focus:border-emerald-600 focus:outline-none"
+        />
+      </label>
+      {error && <p className="mt-1.5 text-sm text-red-400">{error}</p>}
+    </div>
   )
 }
