@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   totalIn, rebuyCount, profit, totalInPlay, totalCounted,
   allCounted, tableBalance, formatCents, parseDollarsToCents,
-  centsToDollarInput,
+  centsToDollarInput, totalWinnings, foodSplit, finalCents,
+  parseSignedDollarsToCents,
   type GamePlayerLike,
 } from '@/lib/money'
 
@@ -10,6 +11,9 @@ const gp = (finalStack: number | null, ...amounts: number[]): GamePlayerLike => 
   finalStack,
   buyIns: amounts.map((amount) => ({ amount })),
 })
+
+// A player whose profit is exactly `pokerCents`: one buy-in, final stack above it.
+const withProfit = (pokerCents: number): GamePlayerLike => gp(10000 + pokerCents, 10000)
 
 describe('totalIn', () => {
   it('sums a lone original buy-in', () => {
@@ -105,6 +109,80 @@ describe('parseDollarsToCents', () => {
     expect(cents).toEqual([1, 10, 2030, 1999, 10005])
     expect(cents.reduce((s, c) => s + c, 0)).toBe(14045)
     expect(formatCents(14045)).toBe('$140.45')
+  })
+})
+
+describe('parseSignedDollarsToCents', () => {
+  it('parses positive and negative adjustments', () => {
+    expect(parseSignedDollarsToCents('5')).toBe(500)
+    expect(parseSignedDollarsToCents('-5')).toBe(-500)
+    expect(parseSignedDollarsToCents('-12.50')).toBe(-1250)
+    expect(parseSignedDollarsToCents('0')).toBe(0)
+  })
+  it('rejects garbage', () => {
+    expect(parseSignedDollarsToCents('--5')).toBeNull()
+    expect(parseSignedDollarsToCents('abc')).toBeNull()
+  })
+})
+
+describe('totalWinnings', () => {
+  it('sums only positive profits, ignoring losers and uncounted', () => {
+    expect(totalWinnings([withProfit(20550), withProfit(-26800), gp(null, 10000)])).toBe(20550)
+  })
+})
+
+describe('foodSplit', () => {
+  // Screenshot 2: bill ($187.25) exceeds 25% of winnings, so winners are capped
+  // at 25% and the leftover is split evenly across all 9 players.
+  it('caps winners at 25% and splits the remainder evenly (bill > 25%)', () => {
+    const players = [
+      withProfit(20550), withProfit(-26800), withProfit(-4150), withProfit(-17000),
+      withProfit(9500), withProfit(1450), withProfit(5700), withProfit(16100),
+      withProfit(-5350),
+    ]
+    const shares = foodSplit(players, 18725)
+    // Winnings = 533.00; 25% = 133.25; remainder = 54.00 → 6.00 each of 9.
+    expect(shares.every((s) => s.equalCents === 600)).toBe(true)
+    expect(shares[0].winnerCents).toBe(5138) // Sridhar 51.38
+    expect(shares[4].winnerCents).toBe(2375) // Pradeep 23.75
+    expect(shares[5].winnerCents).toBe(363) // Ashwin 3.63
+    expect(shares[7].winnerCents).toBe(4025) // Amit 40.25
+    expect(shares[1].winnerCents).toBe(0) // loser pays no winner share
+  })
+
+  // Screenshot 1: bill ($188.91) is under 25% of winnings, so winners cover the
+  // whole bill pro-rata and losers pay nothing.
+  it('winners cover the whole bill pro-rata when under 25% (losers pay 0)', () => {
+    const players = [
+      withProfit(11750), withProfit(9500), withProfit(21850), withProfit(38500),
+      withProfit(6700), withProfit(-14500),
+    ]
+    const shares = foodSplit(players, 18891)
+    expect(shares.every((s) => s.equalCents === 0)).toBe(true) // nothing left over
+    expect(shares[0].winnerCents).toBe(2514) // Sridhar 25.14
+    expect(shares[3].winnerCents).toBe(8237) // Shiva 82.37
+    expect(shares[5].winnerCents).toBe(0) // loser
+  })
+
+  it('handles a bill with no winners by splitting it all evenly', () => {
+    const players = [withProfit(-1000), withProfit(-2000)]
+    const shares = foodSplit(players, 3000)
+    expect(shares).toEqual([
+      { winnerCents: 0, equalCents: 1500 },
+      { winnerCents: 0, equalCents: 1500 },
+    ])
+  })
+})
+
+describe('finalCents', () => {
+  it('is poker profit minus food owed plus adjustment', () => {
+    const player = withProfit(20550)
+    expect(finalCents(player, { winnerCents: 5138, equalCents: 600 }, 0)).toBe(14812)
+    expect(finalCents(player, { winnerCents: 5138, equalCents: 600 }, 500)).toBe(15312)
+    expect(finalCents(player, null, -300)).toBe(20250)
+  })
+  it('is null when the player has not cashed out', () => {
+    expect(finalCents(gp(null, 10000), null, 0)).toBeNull()
   })
 })
 

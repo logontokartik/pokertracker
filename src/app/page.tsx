@@ -1,14 +1,14 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/db'
-import { requireAuthPage } from '@/lib/auth'
-import { logout } from '@/app/actions/auth'
+import { isAuthed } from '@/lib/auth'
 import { totalInPlay, formatCents } from '@/lib/money'
 import { PageShell } from '@/components/ui/PageShell'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
+import { AdminBar } from '@/components/nav/AdminBar'
 
 export default async function HomePage() {
-  await requireAuthPage()
+  const isAdmin = await isAuthed()
   const games = await prisma.game.findMany({
     orderBy: { playedOn: 'desc' },
     include: { players: { include: { player: true, buyIns: true } } },
@@ -19,27 +19,23 @@ export default async function HomePage() {
       <PageHeader
         title="Poker Tracker"
         action={
-          <>
-            <Link
-              href="/players"
-              className="inline-flex min-h-11 items-center px-1 underline active:text-neutral-200"
-            >
-              roster
-            </Link>
-            <form action={logout}>
-              <button className="inline-flex min-h-11 items-center px-1 underline active:text-neutral-200">
-                log out
-              </button>
-            </form>
-          </>
+          <Link
+            href="/stats"
+            className="inline-flex min-h-11 items-center px-1 underline active:text-neutral-200"
+          >
+            stats
+          </Link>
         }
       />
-      <Link
-        href="/game/new"
-        className="w-full rounded-xl bg-emerald-600 p-3.5 text-center text-base font-semibold text-white active:bg-emerald-700"
-      >
-        Start a new game
-      </Link>
+      <AdminBar isAdmin={isAdmin} />
+      {isAdmin && (
+        <Link
+          href="/game/new"
+          className="w-full rounded-xl bg-emerald-600 p-3.5 text-center text-base font-semibold text-white active:bg-emerald-700"
+        >
+          Start a new game
+        </Link>
+      )}
       <ul className="flex flex-col gap-3">
         {games.map((g) => (
           <li key={g.id}>

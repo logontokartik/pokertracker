@@ -29,6 +29,7 @@ model Game {
   viewSlug     String       @unique
   createdAt    DateTime     @default(now())
   finishedAt   DateTime?
+  foodBillCents Int?
   players      GamePlayer[]
 }
 
@@ -37,6 +38,7 @@ model GamePlayer {
   gameId     String
   playerId   String
   finalStack Int?
+  miscAdjCents Int    @default(0)
   game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   player     Player   @relation(fields: [playerId], references: [id])
   buyIns     BuyIn[]

@@ -1,24 +1,35 @@
-import Link from 'next/link'
 import { prisma } from '@/lib/db'
-import { requireAuthPage } from '@/lib/auth'
+import { isAuthed } from '@/lib/auth'
 import { PlayerAdmin } from '@/components/PlayerAdmin'
 import { PageShell } from '@/components/ui/PageShell'
 import { PageHeader } from '@/components/ui/PageHeader'
 
 export default async function PlayersPage() {
-  await requireAuthPage()
+  const isAdmin = await isAuthed()
   const players = await prisma.player.findMany({ orderBy: { name: 'asc' } })
+
   return (
     <PageShell>
-      <PageHeader
-        title="Roster"
-        action={
-          <Link href="/" className="inline-flex min-h-11 items-center px-1 underline active:text-neutral-200">
-            home
-          </Link>
-        }
-      />
-      <PlayerAdmin players={players.map(({ id, name, archived }) => ({ id, name, archived }))} />
+      <PageHeader title="Roster" />
+      {isAdmin ? (
+        <PlayerAdmin players={players.map(({ id, name, archived }) => ({ id, name, archived }))} />
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {players
+            .filter((p) => !p.archived)
+            .map((p) => (
+              <li
+                key={p.id}
+                className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-lg font-semibold text-neutral-50"
+              >
+                {p.name}
+              </li>
+            ))}
+          {players.filter((p) => !p.archived).length === 0 && (
+            <p className="text-neutral-500">No players yet.</p>
+          )}
+        </ul>
+      )}
     </PageShell>
   )
 }

@@ -77,8 +77,42 @@ async function loadActiveGamePlayer(gamePlayerId: string) {
 
 function revalidateGame(game: { id: string; viewSlug: string }) {
   revalidatePath('/')
+  revalidatePath('/live')
   revalidatePath(`/game/${game.id}`)
   revalidatePath(`/v/${game.viewSlug}`)
+}
+
+export async function setFoodBill(
+  gameId: string,
+  foodBillCents: number | null
+): Promise<{ error?: string }> {
+  const denied = await guard()
+  if (denied) return denied
+  if (foodBillCents !== null && (!Number.isInteger(foodBillCents) || foodBillCents < 0)) {
+    return { error: 'Food bill must be zero or more' }
+  }
+  const game = await prisma.game.findUnique({ where: { id: gameId } })
+  if (!game) return { error: 'Game not found' }
+  await prisma.game.update({ where: { id: gameId }, data: { foodBillCents } })
+  revalidateGame(game)
+  return {}
+}
+
+export async function setMiscAdj(
+  gamePlayerId: string,
+  miscAdjCents: number
+): Promise<{ error?: string }> {
+  const denied = await guard()
+  if (denied) return denied
+  if (!Number.isInteger(miscAdjCents)) return { error: 'Adjustment must be a dollar amount' }
+  const gp = await prisma.gamePlayer.findUnique({
+    where: { id: gamePlayerId },
+    include: { game: true },
+  })
+  if (!gp) return { error: 'Player not found' }
+  await prisma.gamePlayer.update({ where: { id: gamePlayerId }, data: { miscAdjCents } })
+  revalidateGame(gp.game)
+  return {}
 }
 
 export async function addRebuy(

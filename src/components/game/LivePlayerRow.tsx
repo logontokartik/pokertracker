@@ -22,7 +22,8 @@ export function LivePlayerRow({ gamePlayerId, name, totalInCents, rebuys, defaul
     startTransition(async () => {
       const result = await fn()
       if (result.error === 'Unauthorized') {
-        window.location.href = '/login' // spec: unauthenticated mutation redirects, never a silent no-op
+        // Admin lock expired — reload to drop back into read-only mode.
+        window.location.reload()
         return
       }
       setError(result.error ?? null)

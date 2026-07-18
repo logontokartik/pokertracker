@@ -14,7 +14,8 @@ export function PlayerAdmin({ players }: { players: PlayerRow[] }) {
     startTransition(async () => {
       const result = await fn()
       if (result.error === 'Unauthorized') {
-        window.location.href = '/login'
+        // Session lock expired — reload to drop back into read-only mode.
+        window.location.reload()
         return
       }
       setError(result.error ?? null)

@@ -23,7 +23,8 @@ export function StackInput({ gamePlayerId, name, finalStackCents }: Props) {
     startTransition(async () => {
       const result = await setFinalStack(gamePlayerId, cents)
       if (result.error === 'Unauthorized') {
-        window.location.href = '/login'
+        // Admin lock expired — reload to drop back into read-only mode.
+        window.location.reload()
         return
       }
       setError(result.error ?? null)

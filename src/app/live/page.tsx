@@ -1,4 +1,3 @@
-import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { totalInPlay, formatCents } from '@/lib/money'
 import { buildResultRows } from '@/lib/results'
@@ -9,18 +8,31 @@ import { PageHeader } from '@/components/ui/PageHeader'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ViewGamePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const game = await prisma.game.findUnique({
-    where: { viewSlug: slug },
-    include: {
-      players: {
-        include: { player: true, buyIns: true },
-        orderBy: { player: { name: 'asc' } },
+export default async function LivePage() {
+  // Prefer the game that's currently live; otherwise show the most recent one.
+  const game =
+    (await prisma.game.findFirst({
+      where: { status: 'ACTIVE' },
+      orderBy: { playedOn: 'desc' },
+      include: {
+        players: { include: { player: true, buyIns: true }, orderBy: { player: { name: 'asc' } } },
       },
-    },
-  })
-  if (!game) notFound()
+    })) ??
+    (await prisma.game.findFirst({
+      orderBy: { playedOn: 'desc' },
+      include: {
+        players: { include: { player: true, buyIns: true }, orderBy: { player: { name: 'asc' } } },
+      },
+    }))
+
+  if (!game) {
+    return (
+      <PageShell>
+        <PageHeader title="Public view" />
+        <p className="text-neutral-500">No games yet.</p>
+      </PageShell>
+    )
+  }
 
   const rows = buildResultRows(game.players, game.foodBillCents)
 
