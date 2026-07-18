@@ -82,6 +82,18 @@ function revalidateGame(game: { id: string; viewSlug: string }) {
   revalidatePath(`/v/${game.viewSlug}`)
 }
 
+export async function deleteGame(gameId: string): Promise<{ error?: string }> {
+  const denied = await guard()
+  if (denied) return denied
+  const game = await prisma.game.findUnique({ where: { id: gameId } })
+  if (!game) return { error: 'Game not found' }
+  await prisma.game.delete({ where: { id: gameId } })
+  revalidatePath('/')
+  revalidatePath('/live')
+  revalidatePath(`/v/${game.viewSlug}`)
+  redirect('/')
+}
+
 export async function setFoodBill(
   gameId: string,
   foodBillCents: number | null

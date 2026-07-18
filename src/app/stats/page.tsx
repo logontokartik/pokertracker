@@ -1,4 +1,6 @@
+import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
+import { isAuthed } from '@/lib/auth'
 import { profit, formatCents } from '@/lib/money'
 import { PageShell } from '@/components/ui/PageShell'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -8,6 +10,8 @@ export const dynamic = 'force-dynamic'
 type Stat = { name: string; games: number; total: number; biggestWin: number; biggestLoss: number }
 
 export default async function StatsPage() {
+  // Admin-only; the public never sees lifetime stats.
+  if (!(await isAuthed())) redirect('/')
   const gamePlayers = await prisma.gamePlayer.findMany({
     where: { game: { status: 'FINISHED' } },
     include: { player: true, buyIns: true },

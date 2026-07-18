@@ -17,6 +17,7 @@ import { ShareLink } from '@/components/game/ShareLink'
 import { StackInput } from '@/components/game/StackInput'
 import { FinishButton } from '@/components/game/FinishButton'
 import { FoodAdmin } from '@/components/game/FoodAdmin'
+import { DeleteGameButton } from '@/components/game/DeleteGameButton'
 import { ResultsTable } from '@/components/game/ResultsTable'
 import { PageShell } from '@/components/ui/PageShell'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -115,6 +116,11 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
             />
           )}
         </>
+      )}
+      {isAdmin && (
+        <div className="mt-2 flex justify-center border-t border-neutral-800 pt-4">
+          <DeleteGameButton gameId={game.id} />
+        </div>
       )}
     </PageShell>
   )

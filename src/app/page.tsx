@@ -19,12 +19,14 @@ export default async function HomePage() {
       <PageHeader
         title="Poker Tracker"
         action={
-          <Link
-            href="/stats"
-            className="inline-flex min-h-11 items-center px-1 underline active:text-neutral-200"
-          >
-            stats
-          </Link>
+          isAdmin ? (
+            <Link
+              href="/stats"
+              className="inline-flex min-h-11 items-center px-1 underline active:text-neutral-200"
+            >
+              stats
+            </Link>
+          ) : undefined
         }
       />
       <AdminBar isAdmin={isAdmin} />
