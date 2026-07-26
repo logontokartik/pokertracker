@@ -19,6 +19,7 @@ import { FinishButton } from '@/components/game/FinishButton'
 import { FoodAdmin } from '@/components/game/FoodAdmin'
 import { DeleteGameButton } from '@/components/game/DeleteGameButton'
 import { ResultsTable } from '@/components/game/ResultsTable'
+import { DownloadImageButton } from '@/components/game/DownloadImageButton'
 import { PageShell } from '@/components/ui/PageShell'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
@@ -54,16 +55,24 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
       ? null
       : `${formatCents(totalCounted(game.players))} counted, ${formatCents(totalInPlay(game.players))} in play — ${formatCents(Math.abs(balance))} ${balance < 0 ? 'unaccounted' : 'over'}`
   const resultRows = buildResultRows(game.players, game.foodBillCents)
+  const title = game.label ?? 'Poker night'
+  const subtitle = `${game.playedOn.toLocaleDateString()} · ${formatCents(game.defaultBuyIn)} buy-in · ${formatCents(totalInPlay(game.players))} in play`
 
   return (
-    <PageShell>
+    <PageShell wide={!isEditing}>
       <PageHeader
-        title={game.label ?? 'Poker night'}
-        subtitle={
-          <>
-            {game.playedOn.toLocaleDateString()} · {formatCents(game.defaultBuyIn)} buy-in ·{' '}
-            {formatCents(totalInPlay(game.players))} in play
-          </>
+        title={title}
+        subtitle={subtitle}
+        action={
+          !isEditing && (
+            <DownloadImageButton
+              players={resultRows}
+              foodBillCents={game.foodBillCents}
+              title={title}
+              subtitle={subtitle}
+              filename={`poker-${game.playedOn.toISOString().slice(0, 10)}.png`}
+            />
+          )
         }
       />
       {isAdmin && <ShareLink viewSlug={game.viewSlug} />}
@@ -103,7 +112,7 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
         </>
       ) : (
         <>
-          <ResultsTable players={resultRows} />
+          <ResultsTable players={resultRows} foodBillCents={game.foodBillCents} />
           {isAdmin && game.status === 'FINISHED' && (
             <FoodAdmin
               gameId={game.id}
