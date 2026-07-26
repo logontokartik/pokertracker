@@ -111,7 +111,8 @@ export function buildColumns(players: ResultRow[], settle: boolean): Column[] {
           ? plain(money(r.profitCents))
           : { text: money(r.profitCents), color: tone(r.profitCents), bold: true }
       ),
-      total: totalCell(sum((r) => r.profitCents), tone(sum((r) => r.profitCents))),
+      // Profits must net to zero; a non-zero total is an anomaly, so flag it red.
+      total: totalCell(sum((r) => r.profitCents), sum((r) => r.profitCents) === 0 ? INK : NEG),
     },
   ]
 
@@ -151,6 +152,36 @@ export function buildColumns(players: ResultRow[], settle: boolean): Column[] {
   return columns
 }
 
+// The lines under the table: what the food bill was, what actually got charged, and
+// whether the poker profits failed to net to zero once everyone had cashed out.
+export function buildFooter(
+  players: ResultRow[],
+  foodBillCents: number | null,
+  settle: boolean,
+  allCashedOut: boolean
+): { text: string; color: string }[] {
+  const lines: { text: string; color: string }[] = []
+  if (settle && foodBillCents !== null) {
+    const winners = players.reduce((s, r) => s + (r.foodWinnerCents ?? 0), 0)
+    const remaining = players.reduce((s, r) => s + (r.foodEqualCents ?? 0), 0)
+    lines.push(
+      { text: `Food bill ${formatCents(foodBillCents)}`, color: MUTED },
+      {
+        text: `Charged to players ${formatCents(winners + remaining)} (${formatCents(winners)} winners + ${formatCents(remaining)} remaining)`,
+        color: MUTED,
+      }
+    )
+  }
+  const unaccounted = allCashedOut ? players.reduce((s, r) => s + (r.profitCents ?? 0), 0) : 0
+  if (unaccounted !== 0) {
+    lines.push({
+      text: `Unaccounted ${formatCents(Math.abs(unaccounted))} ${unaccounted > 0 ? 'over' : 'short'} — chips counted don't match buy-ins`,
+      color: NEG,
+    })
+  }
+  return lines
+}
+
 function renderResults({
   players,
   foodBillCents,
@@ -167,16 +198,7 @@ function renderResults({
   const rowCount = players.length
   const hasTotals = columns[0].total !== null
 
-  const foodWinnerTotal = players.reduce((s, r) => s + (r.foodWinnerCents ?? 0), 0)
-  const foodEqualTotal = players.reduce((s, r) => s + (r.foodEqualCents ?? 0), 0)
-  const foodCharged = foodWinnerTotal + foodEqualTotal
-  const footer =
-    settle && foodBillCents !== null
-      ? [
-          `Food bill ${formatCents(foodBillCents)}`,
-          `Charged to players ${formatCents(foodCharged)} (${formatCents(foodWinnerTotal)} winners + ${formatCents(foodEqualTotal)} remaining)`,
-        ]
-      : []
+  const footer = buildFooter(players, foodBillCents, settle, hasTotals)
 
   // Measure first on a throwaway context, then size the real canvas to fit.
   const measure = document.createElement('canvas').getContext('2d')!
@@ -197,7 +219,7 @@ function renderResults({
   const headWidth = Math.max(
     titleWidth,
     measure.measureText(subtitle).width,
-    ...footer.map((line) => measure.measureText(line).width)
+    ...footer.map((line) => measure.measureText(line.text).width)
   )
 
   const width = Math.ceil(Math.max(tableWidth, headWidth)) + PAD * 2
@@ -267,11 +289,11 @@ function renderResults({
   }
 
   if (footer.length) {
-    ctx.fillStyle = MUTED
     ctx.font = `14px ${FONT}`
     ctx.textAlign = 'left'
     footer.forEach((line, i) => {
-      ctx.fillText(line, PAD, tableTop + tableHeight + 20 + i * 20)
+      ctx.fillStyle = line.color
+      ctx.fillText(line.text, PAD, tableTop + tableHeight + 20 + i * 20)
     })
   }
 

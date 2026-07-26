@@ -45,6 +45,10 @@ export function ResultsTable({
   const foodCharged = foodWinnerTotal + foodEqualTotal
   // Equal shares are rounded per player, so the charged total can drift a cent or two.
   const foodRounding = foodCharged - (foodBillCents ?? 0)
+  const showFood = settle && foodBillCents !== null
+  // Poker profits must net to zero once everyone has cashed out; anything left over
+  // means the chips counted don't match what was bought in.
+  const unaccounted = allCashedOut ? totals.profit : 0
 
   return (
     <div>
@@ -148,7 +152,9 @@ export function ResultsTable({
                 <td className="p-1.5 sm:p-2">Total</td>
                 <td className="p-1.5 text-right sm:p-2">{formatCents(totals.buyIns)}</td>
                 <td className="p-1.5 text-right sm:p-2">{formatCents(totals.cashOut)}</td>
-                <td className={`p-1.5 text-right sm:p-2 ${signed(totals.profit)}`}>
+                <td
+                  className={`p-1.5 text-right sm:p-2 ${totals.profit === 0 ? '' : 'text-red-500'}`}
+                >
                   {formatCents(totals.profit)}
                 </td>
                 {settle && (
@@ -171,20 +177,33 @@ export function ResultsTable({
         </table>
       </div>
 
-      {settle && foodBillCents !== null && (
+      {(showFood || unaccounted !== 0) && (
         <div className="mt-3 flex flex-col gap-1 border-t border-neutral-800 pt-3 text-xs text-neutral-400">
-          <div className="flex justify-between gap-3">
-            <span>Food bill</span>
-            <span className="font-medium text-neutral-200">{formatCents(foodBillCents)}</span>
-          </div>
-          <div className="flex justify-between gap-3">
-            <span>Charged to players</span>
-            <span>
-              {formatCents(foodCharged)} ({formatCents(foodWinnerTotal)} winners +{' '}
-              {formatCents(foodEqualTotal)} remaining)
-              {foodRounding !== 0 && `, incl. ${formatCents(foodRounding)} rounding`}
-            </span>
-          </div>
+          {showFood && (
+            <>
+              <div className="flex justify-between gap-3">
+                <span>Food bill</span>
+                <span className="font-medium text-neutral-200">{formatCents(foodBillCents!)}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span>Charged to players</span>
+                <span>
+                  {formatCents(foodCharged)} ({formatCents(foodWinnerTotal)} winners +{' '}
+                  {formatCents(foodEqualTotal)} remaining)
+                  {foodRounding !== 0 && `, incl. ${formatCents(foodRounding)} rounding`}
+                </span>
+              </div>
+            </>
+          )}
+          {unaccounted !== 0 && (
+            <div className="flex justify-between gap-3">
+              <span>Unaccounted</span>
+              <span className="font-medium text-red-500">
+                {formatCents(Math.abs(unaccounted))} {unaccounted > 0 ? 'over' : 'short'} — chips
+                counted don&apos;t match buy-ins
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildColumns } from '@/components/game/DownloadImageButton'
+import { buildColumns, buildFooter } from '@/components/game/DownloadImageButton'
 import type { ResultRow } from '@/lib/results'
 
 const settled: ResultRow[] = [
@@ -45,6 +45,36 @@ describe('buildColumns (downloaded image)', () => {
     expect(text(columns, 'Final')).toEqual({ cells: ['$210.76', '-$157.86'], total: '$52.90' })
     expect(text(columns, 'Total taken').total).toBe('$330')
     expect(text(columns, 'Misc. adj').cells).toEqual(['—', '-$5'])
+  })
+
+  it('flags the leftover when poker profits do not net to zero', () => {
+    // $10 more counted than bought in — the Poker final column totals +$10, not zero.
+    const over = settled.map((r, i) =>
+      i === 0 ? { ...r, finalStackCents: 39750, profitCents: 30750 } : r
+    )
+    const lines = buildFooter(over, 21400, true, true).map((l) => l.text)
+    expect(lines).toEqual([
+      'Food bill $214',
+      'Charged to players $99.10 ($74.38 winners + $24.72 remaining)',
+      "Unaccounted $167 over — chips counted don't match buy-ins",
+    ])
+  })
+
+  it('says short when buy-ins exceed the chips counted, and stays quiet when balanced', () => {
+    const short = settled.map((r, i) =>
+      i === 0 ? { ...r, finalStackCents: 21400, profitCents: 12400 } : r
+    )
+    expect(buildFooter(short, null, true, true).map((l) => l.text)).toEqual([
+      "Unaccounted $16.50 short — chips counted don't match buy-ins",
+    ])
+    const balanced = settled.map((r, i) =>
+      i === 0 ? { ...r, finalStackCents: 23050, profitCents: 14050 } : r
+    )
+    expect(buildFooter(balanced, null, true, true)).toEqual([])
+  })
+
+  it('stays quiet about unaccounted money while players are still cashing out', () => {
+    expect(buildFooter(settled, null, true, false)).toEqual([])
   })
 
   it('drops the settlement columns and the totals row for an in-progress game', () => {
