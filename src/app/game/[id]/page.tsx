@@ -54,6 +54,15 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
     balance === 0 && allCounted(game.players)
       ? null
       : `${formatCents(totalCounted(game.players))} counted, ${formatCents(totalInPlay(game.players))} in play — ${formatCents(Math.abs(balance))} ${balance < 0 ? 'unaccounted' : 'over'}`
+  const uncounted = game.players.filter((gp) => gp.finalStack === null).map((gp) => gp.player.name)
+  const finishWarning = [
+    warning,
+    uncounted.length > 0
+      ? `${uncounted.join(', ')} ${uncounted.length === 1 ? 'has' : 'have'} no cash-out — they'll be recorded with $0 in chips.`
+      : null,
+  ]
+    .filter(Boolean)
+    .join('\n\n') || null
   const resultRows = buildResultRows(game.players, game.foodBillCents)
   const title = game.label ?? 'Poker night'
   const subtitle = `${game.playedOn.toLocaleDateString()} · ${formatCents(game.defaultBuyIn)} buy-in · ${formatCents(totalInPlay(game.players))} in play`
@@ -107,7 +116,7 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
             <p className={anyCounted && balance === 0 && allCounted(game.players) ? 'text-emerald-500' : 'text-amber-500'}>
               {warning ?? 'Table balances ✓'}
             </p>
-            <FinishButton gameId={game.id} warning={warning} />
+            <FinishButton gameId={game.id} warning={finishWarning} />
           </Card>
         </>
       ) : (

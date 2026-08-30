@@ -209,10 +209,17 @@ export async function finishGame(gameId: string): Promise<{ error?: string }> {
   const game = await prisma.game.findUnique({ where: { id: gameId } })
   if (!game) return { error: 'Game not found' }
   if (game.status !== 'ACTIVE') return { error: 'Game is already finished' }
-  await prisma.game.update({
-    where: { id: gameId },
-    data: { status: 'FINISHED', finishedAt: new Date() },
-  })
+  // Anyone still uncounted at the finish busted out: they leave with no chips.
+  await prisma.$transaction([
+    prisma.gamePlayer.updateMany({
+      where: { gameId, finalStack: null },
+      data: { finalStack: 0 },
+    }),
+    prisma.game.update({
+      where: { id: gameId },
+      data: { status: 'FINISHED', finishedAt: new Date() },
+    }),
+  ])
   revalidateGame(game)
   return {}
 }
