@@ -1,66 +1,75 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/db'
-import { isAuthed } from '@/lib/auth'
-import { totalInPlay, formatCents } from '@/lib/money'
+import { claimInvites, getViewer } from '@/lib/access'
 import { PageShell } from '@/components/ui/PageShell'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
-import { AdminBar } from '@/components/nav/AdminBar'
+import { SignInButton } from '@/components/auth/SignInButton'
+import { SignOutButton } from '@/components/auth/SignOutButton'
+import { CreateGroupForm } from '@/components/groups/CreateGroupForm'
+
+export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  const isAdmin = await isAuthed()
-  const games = await prisma.game.findMany({
-    orderBy: { playedOn: 'desc' },
-    include: { players: { include: { player: true, buyIns: true } } },
+  const viewer = await getViewer()
+
+  if (!viewer) {
+    return (
+      <PageShell>
+        <PageHeader title="Poker Tracker" />
+        <p className="text-base text-neutral-400">
+          Track buy-ins, cash-outs and settle up for your home game — with a live link everyone at
+          the table can follow.
+        </p>
+        <SignInButton />
+      </PageShell>
+    )
+  }
+
+  await claimInvites(viewer)
+  const groups = await prisma.group.findMany({
+    where: { members: { some: { userId: viewer.id } } },
+    orderBy: { name: 'asc' },
+    include: {
+      _count: { select: { games: true } },
+      games: { where: { status: 'ACTIVE' }, select: { id: true } },
+    },
   })
 
   return (
     <PageShell>
       <PageHeader
-        title="Poker Tracker"
-        action={
-          isAdmin ? (
-            <Link
-              href="/stats"
-              className="inline-flex min-h-11 items-center px-1 underline active:text-neutral-200"
-            >
-              stats
-            </Link>
-          ) : undefined
-        }
+        title="My groups"
+        subtitle={viewer.email}
+        action={<SignOutButton />}
       />
-      <AdminBar isAdmin={isAdmin} />
-      {isAdmin && (
-        <Link
-          href="/game/new"
-          className="w-full rounded-xl bg-emerald-600 p-3.5 text-center text-base font-semibold text-white active:bg-emerald-700"
-        >
-          Start a new game
-        </Link>
-      )}
       <ul className="flex flex-col gap-3">
-        {games.map((g) => (
+        {groups.map((g) => (
           <li key={g.id}>
-            <Link href={`/game/${g.id}`} className="block active:opacity-80">
+            <Link href={`/g/${g.slug}`} className="block active:opacity-80">
               <Card>
-                <div className="flex justify-between">
-                  <span className="text-lg font-semibold text-neutral-50">
-                    {g.label ?? 'Poker night'}
-                  </span>
-                  <span className={g.status === 'ACTIVE' ? 'text-emerald-500' : 'text-neutral-500'}>
-                    {g.status === 'ACTIVE' ? 'live' : g.playedOn.toLocaleDateString()}
-                  </span>
+                <div className="flex justify-between gap-3">
+                  <span className="text-lg font-semibold text-neutral-50">{g.name}</span>
+                  {g.games.length > 0 && <span className="text-emerald-500">live</span>}
                 </div>
                 <div className="mt-1 text-sm text-neutral-400">
-                  {g.players.map((gp) => gp.player.name).join(', ')} ·{' '}
-                  {formatCents(g.defaultBuyIn)} buy-in · {formatCents(totalInPlay(g.players))} total
+                  {g._count.games} {g._count.games === 1 ? 'game' : 'games'}
                 </div>
               </Card>
             </Link>
           </li>
         ))}
       </ul>
-      {games.length === 0 && <p className="text-neutral-500">No games yet.</p>}
+      {groups.length === 0 && (
+        <p className="text-neutral-500">
+          You&apos;re not in any groups yet. Create one below, or ask a group admin to invite{' '}
+          {viewer.email}.
+        </p>
+      )}
+      <Card className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold text-neutral-50">Create a group</h2>
+        <CreateGroupForm />
+      </Card>
     </PageShell>
   )
 }
