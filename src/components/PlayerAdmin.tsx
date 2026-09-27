@@ -5,7 +5,7 @@ import { createPlayer, renamePlayer, setPlayerArchived } from '@/app/actions/pla
 
 type PlayerRow = { id: string; name: string; archived: boolean }
 
-export function PlayerAdmin({ players }: { players: PlayerRow[] }) {
+export function PlayerAdmin({ groupId, players }: { groupId: string; players: PlayerRow[] }) {
   const [newName, setNewName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -14,7 +14,7 @@ export function PlayerAdmin({ players }: { players: PlayerRow[] }) {
     startTransition(async () => {
       const result = await fn()
       if (result.error === 'Unauthorized') {
-        // Session lock expired — reload to drop back into read-only mode.
+        // Signed out or no longer an admin — reload to drop back into read-only mode.
         window.location.reload()
         return
       }
@@ -28,7 +28,7 @@ export function PlayerAdmin({ players }: { players: PlayerRow[] }) {
         onSubmit={(e) => {
           e.preventDefault()
           run(async () => {
-            const result = await createPlayer(newName)
+            const result = await createPlayer(groupId, newName)
             if (!result.error) setNewName('')
             return result
           })

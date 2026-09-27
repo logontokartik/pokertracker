@@ -5,8 +5,8 @@ import { createGame } from '@/app/actions/games'
 
 type RosterPlayer = { id: string; name: string }
 
-export function NewGameForm({ roster }: { roster: RosterPlayer[] }) {
-  const [state, formAction, pending] = useActionState(createGame, undefined)
+export function NewGameForm({ groupId, roster }: { groupId: string; roster: RosterPlayer[] }) {
+  const [state, formAction, pending] = useActionState(createGame.bind(null, groupId), undefined)
   return (
     <form action={formAction} className="flex flex-col gap-5">
       <input
