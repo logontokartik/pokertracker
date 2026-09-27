@@ -66,7 +66,12 @@ export async function renamePlayer(id: string, name: string): Promise<Result> {
   if (!trimmed) return { error: 'Name is required' }
   const existing = await findByNameInsensitive(player.groupId, trimmed, id)
   if (existing) return { error: `"${existing.name}" is already on the roster` }
-  await prisma.player.update({ where: { id }, data: { name: trimmed } })
+  try {
+    await prisma.player.update({ where: { id }, data: { name: trimmed } })
+  } catch (e) {
+    if (isUniqueViolation(e)) return { error: `"${trimmed}" is already on the roster` }
+    throw e
+  }
   revalidateRoster(player.group.slug)
   return {}
 }

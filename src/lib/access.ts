@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { headers } from 'next/headers'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
@@ -5,10 +6,11 @@ import { prisma } from '@/lib/db'
 export type Viewer = typeof auth.$Infer.Session.user
 
 /** The signed-in user, or null. */
-export async function getViewer(): Promise<Viewer | null> {
+// cache(): the group layout and page both resolve the viewer in one request.
+export const getViewer = cache(async (): Promise<Viewer | null> => {
   const session = await auth.api.getSession({ headers: await headers() })
   return session?.user ?? null
-}
+})
 
 /** Turn pending invites for the user's verified email into admin memberships. */
 export async function claimInvites(user: Pick<Viewer, 'id' | 'email' | 'emailVerified'>) {
@@ -42,10 +44,10 @@ export async function requireGroupAdmin(groupId: string): Promise<Viewer> {
   return viewer
 }
 
-export async function getGroupForViewer(slug: string) {
+export const getGroupForViewer = cache(async (slug: string) => {
   const group = await prisma.group.findUnique({ where: { slug } })
   if (!group) return null
   const viewer = await getViewer()
   const isAdmin = viewer ? await isGroupAdmin(viewer.id, group.id) : false
   return { group, isAdmin, viewer }
-}
+})

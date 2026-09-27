@@ -53,6 +53,8 @@ Open `http://localhost:3000`, sign in with Google, and create a group.
 3. Set `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (the production
    URL), `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the Vercel project env
    vars, and add the production redirect URI to the Google OAuth client.
+   Sign-in only works on that URL — Vercel preview deployments can show public
+   pages but can't sign in.
 4. Set the project Build Command to `npx prisma migrate deploy && next build`
    so schema migrations run on each deploy.
 5. Deploy.
