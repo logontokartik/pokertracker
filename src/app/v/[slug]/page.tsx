@@ -1,5 +1,7 @@
-import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
+import { notFound, redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
+import { getViewer, isGroupAdmin } from '@/lib/access'
 import { totalInPlay, formatCents } from '@/lib/money'
 import { buildResultRows } from '@/lib/results'
 import { ResultsTable } from '@/components/game/ResultsTable'
@@ -10,6 +12,10 @@ import { PageHeader } from '@/components/ui/PageHeader'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+}
+
 export default async function ViewGamePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const game = await prisma.game.findUnique({
@@ -19,9 +25,19 @@ export default async function ViewGamePage({ params }: { params: Promise<{ slug:
         include: { player: true, buyIns: true },
         orderBy: { player: { name: 'asc' } },
       },
+      group: { select: { slug: true } },
     },
   })
   if (!game) notFound()
+
+  // Only live games are public. A finished game is visible to its group's admins only.
+  if (game.status === 'FINISHED') {
+    const viewer = await getViewer()
+    if (viewer && (await isGroupAdmin(viewer.id, game.groupId))) {
+      redirect(`/g/${game.group.slug}/game/${game.id}`)
+    }
+    notFound()
+  }
 
   const rows = buildResultRows(game.players, game.foodBillCents)
   const title = game.label ?? 'Poker night'

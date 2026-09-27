@@ -13,7 +13,7 @@ import {
 import { buildResultRows } from '@/lib/results'
 import { LivePlayerRow } from '@/components/game/LivePlayerRow'
 import { AddPlayerPicker } from '@/components/game/AddPlayerPicker'
-import { ShareLink } from '@/components/game/ShareLink'
+import { CopyLink } from '@/components/ui/CopyLink'
 import { StackInput } from '@/components/game/StackInput'
 import { FinishButton } from '@/components/game/FinishButton'
 import { FoodAdmin } from '@/components/game/FoodAdmin'
@@ -95,7 +95,7 @@ export default async function GamePage({
           )
         }
       />
-      {isEditing && <ShareLink viewSlug={game.viewSlug} />}
+      {isEditing && <CopyLink path={`/v/${game.viewSlug}`} label="Copy view link" />}
 
       {isEditing ? (
         <>
