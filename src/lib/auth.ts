@@ -1,13 +1,14 @@
-import { cookies } from 'next/headers'
-import { isValidToken } from '@/lib/auth-core'
+import { betterAuth } from 'better-auth'
+import { prismaAdapter } from 'better-auth/adapters/prisma'
+import { prisma } from '@/lib/db'
 
-export const AUTH_COOKIE = 'poker_auth'
-
-export async function isAuthed(): Promise<boolean> {
-  const store = await cookies()
-  return isValidToken(store.get(AUTH_COOKIE)?.value)
-}
-
-export async function requireAuth(): Promise<void> {
-  if (!(await isAuthed())) throw new Error('Unauthorized')
-}
+export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL,
+  database: prismaAdapter(prisma, { provider: 'postgresql' }),
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    },
+  },
+})

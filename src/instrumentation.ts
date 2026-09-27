@@ -1,7 +1,10 @@
+const REQUIRED_ENV = ['BETTER_AUTH_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'] as const
+
 export async function register() {
-  if (!process.env.POKER_EDIT_PASSWORD) {
+  const missing = REQUIRED_ENV.filter((k) => !process.env[k])
+  if (missing.length > 0) {
     throw new Error(
-      'POKER_EDIT_PASSWORD is not set. Set it in .env (local) or Vercel project env vars.'
+      `Missing required env vars: ${missing.join(', ')}. Set them in .env (local) or Vercel project env vars.`
     )
   }
 }
