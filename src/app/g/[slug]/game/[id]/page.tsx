@@ -1,6 +1,6 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
-import { isAuthed } from '@/lib/auth'
+import { getGroupForViewer } from '@/lib/access'
 import {
   totalIn,
   rebuyCount,
@@ -24,9 +24,15 @@ import { PageShell } from '@/components/ui/PageShell'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 
-export default async function GamePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const isAdmin = await isAuthed()
+export default async function GamePage({
+  params,
+}: {
+  params: Promise<{ slug: string; id: string }>
+}) {
+  const { slug, id } = await params
+  const ctx = await getGroupForViewer(slug)
+  if (!ctx) notFound()
+  const { group, isAdmin } = ctx
 
   const game = await prisma.game.findUnique({
     where: { id },
@@ -37,12 +43,17 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
       },
     },
   })
-  if (!game) notFound()
+  if (!game || game.groupId !== group.id) notFound()
+  // Non-admins only ever see a live game, via its public link.
+  if (!isAdmin) {
+    if (game.status === 'ACTIVE') redirect(`/v/${game.viewSlug}`)
+    notFound()
+  }
 
-  const isEditing = isAdmin && game.status === 'ACTIVE'
+  const isEditing = game.status === 'ACTIVE'
   const candidates = isEditing
     ? await prisma.player.findMany({
-        where: { archived: false, id: { notIn: game.players.map((gp) => gp.playerId) } },
+        where: { groupId: group.id, archived: false, id: { notIn: game.players.map((gp) => gp.playerId) } },
         orderBy: { name: 'asc' },
         select: { id: true, name: true },
       })
@@ -84,7 +95,7 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
           )
         }
       />
-      {isAdmin && <ShareLink viewSlug={game.viewSlug} />}
+      {isEditing && <ShareLink viewSlug={game.viewSlug} />}
 
       {isEditing ? (
         <>
@@ -122,7 +133,7 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
       ) : (
         <>
           <ResultsTable players={resultRows} foodBillCents={game.foodBillCents} />
-          {isAdmin && game.status === 'FINISHED' && (
+          {game.status === 'FINISHED' && (
             <FoodAdmin
               gameId={game.id}
               foodBillCents={game.foodBillCents}
@@ -135,11 +146,9 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
           )}
         </>
       )}
-      {isAdmin && (
-        <div className="mt-2 flex justify-center border-t border-neutral-800 pt-4">
-          <DeleteGameButton gameId={game.id} />
-        </div>
-      )}
+      <div className="mt-2 flex justify-center border-t border-neutral-800 pt-4">
+        <DeleteGameButton gameId={game.id} />
+      </div>
     </PageShell>
   )
 }

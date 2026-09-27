@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
-import { isAuthed } from '@/lib/auth'
+import { getGroupForViewer } from '@/lib/access'
 import { profit, formatCents } from '@/lib/money'
 import { PageShell } from '@/components/ui/PageShell'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -9,11 +9,15 @@ export const dynamic = 'force-dynamic'
 
 type Stat = { name: string; games: number; total: number; biggestWin: number; biggestLoss: number }
 
-export default async function StatsPage() {
+export default async function StatsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const ctx = await getGroupForViewer(slug)
+  if (!ctx) notFound()
+  const { group, isAdmin } = ctx
   // Admin-only; the public never sees lifetime stats.
-  if (!(await isAuthed())) redirect('/')
+  if (!isAdmin) redirect(`/g/${group.slug}`)
   const gamePlayers = await prisma.gamePlayer.findMany({
-    where: { game: { status: 'FINISHED' } },
+    where: { game: { groupId: group.id, status: 'FINISHED' } },
     include: { player: true, buyIns: true },
   })
 
@@ -34,7 +38,7 @@ export default async function StatsPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Lifetime stats" />
+      <PageHeader title="Lifetime stats" subtitle={group.name} />
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
