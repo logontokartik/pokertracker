@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { getGroupForViewer } from '@/lib/access'
+import { liveGamesForGroup } from '@/lib/live'
 import { NewGameForm } from '@/components/NewGameForm'
 import { PageShell } from '@/components/ui/PageShell'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -19,6 +20,7 @@ export default async function NewGamePage({ params }: { params: Promise<{ slug: 
     orderBy: { name: 'asc' },
     select: { id: true, name: true },
   })
+  const { live, busy } = await liveGamesForGroup(group.id)
   return (
     <PageShell>
       <PageHeader
@@ -33,7 +35,7 @@ export default async function NewGamePage({ params }: { params: Promise<{ slug: 
           </Link>
         }
       />
-      <NewGameForm groupId={group.id} roster={roster} />
+      <NewGameForm groupId={group.id} roster={roster} liveGames={live} busy={busy} />
     </PageShell>
   )
 }

@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
+import { liveGamesForGroup } from '@/lib/live'
 import { getGroupForViewer } from '@/lib/access'
 import {
   totalIn,
@@ -58,6 +59,7 @@ export default async function GamePage({
         select: { id: true, name: true },
       })
     : []
+  const { busy } = isEditing ? await liveGamesForGroup(group.id, game.id) : { busy: {} }
 
   const balance = tableBalance(game.players)
   const anyCounted = game.players.some((gp) => gp.finalStack !== null)
@@ -111,7 +113,7 @@ export default async function GamePage({
               />
             ))}
           </div>
-          <AddPlayerPicker gameId={game.id} candidates={candidates} />
+          <AddPlayerPicker gameId={game.id} candidates={candidates} busy={busy} />
           <Card className="flex flex-col gap-3">
             <h2 className="text-lg font-semibold text-neutral-50">Cash out</h2>
             <div className="flex flex-col gap-3">
