@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
-import { getViewer, isGroupAdmin } from '@/lib/access'
+import { canAdminGroup, getViewer } from '@/lib/access'
 import { totalInPlay, formatCents } from '@/lib/money'
 import { buildResultRows } from '@/lib/results'
 import { ResultsTable } from '@/components/game/ResultsTable'
@@ -33,7 +33,7 @@ export default async function ViewGamePage({ params }: { params: Promise<{ slug:
   // Only live games are public. A finished game is visible to its group's admins only.
   if (game.status === 'FINISHED') {
     const viewer = await getViewer()
-    if (viewer && (await isGroupAdmin(viewer.id, game.groupId))) {
+    if (await canAdminGroup(viewer, game.groupId)) {
       redirect(`/g/${game.group.slug}/game/${game.id}`)
     }
     notFound()

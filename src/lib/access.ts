@@ -37,10 +37,25 @@ export async function isGroupAdmin(userId: string, groupId: string): Promise<boo
   return member?.role === 'admin'
 }
 
+/** Emails in SUPER_ADMIN_EMAILS (comma-separated) admin every group. Verified emails only. */
+export function isSuperAdmin(viewer: Pick<Viewer, 'email' | 'emailVerified'> | null): boolean {
+  if (!viewer?.emailVerified) return false
+  const supers = (process.env.SUPER_ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+  return supers.includes(viewer.email.toLowerCase())
+}
+
+export async function canAdminGroup(viewer: Viewer | null, groupId: string): Promise<boolean> {
+  if (!viewer) return false
+  return isSuperAdmin(viewer) || isGroupAdmin(viewer.id, groupId)
+}
+
 /** Returns the signed-in user when they admin `groupId`; throws `Unauthorized` otherwise. */
 export async function requireGroupAdmin(groupId: string): Promise<Viewer> {
   const viewer = await getViewer()
-  if (!viewer || !(await isGroupAdmin(viewer.id, groupId))) throw new Error('Unauthorized')
+  if (!viewer || !(await canAdminGroup(viewer, groupId))) throw new Error('Unauthorized')
   return viewer
 }
 
@@ -48,6 +63,6 @@ export const getGroupForViewer = cache(async (slug: string) => {
   const group = await prisma.group.findUnique({ where: { slug } })
   if (!group) return null
   const viewer = await getViewer()
-  const isAdmin = viewer ? await isGroupAdmin(viewer.id, group.id) : false
+  const isAdmin = await canAdminGroup(viewer, group.id)
   return { group, isAdmin, viewer }
 })

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/db'
-import { claimInvites, getViewer } from '@/lib/access'
+import { claimInvites, getViewer, isSuperAdmin } from '@/lib/access'
 import { PageShell } from '@/components/ui/PageShell'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
@@ -43,6 +43,14 @@ export default async function HomePage() {
         subtitle={viewer.email}
         action={<SignOutButton />}
       />
+      {isSuperAdmin(viewer) && (
+        <Link
+          href="/super"
+          className="rounded-xl border border-emerald-800 bg-emerald-950/40 px-3.5 py-3 text-sm font-semibold text-emerald-400 active:opacity-80"
+        >
+          Super admin · all groups →
+        </Link>
+      )}
       <ul className="flex flex-col gap-3">
         {groups.map((g) => (
           <li key={g.id}>

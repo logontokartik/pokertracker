@@ -30,6 +30,7 @@ See `.env.example`.
 | `BETTER_AUTH_URL` | The app's base URL, e.g. `http://localhost:3000` |
 | `GOOGLE_CLIENT_ID` | From the OAuth client above |
 | `GOOGLE_CLIENT_SECRET` | From the OAuth client above |
+| `SUPER_ADMIN_EMAILS` | Optional. Comma-separated emails that admin every group and can open `/super` (all groups) |
 
 `POKER_EDIT_PASSWORD` is no longer used and can be deleted.
 
@@ -77,6 +78,12 @@ column, replaces the unique player-name index) and has no automatic rollback.
   from **Settings**. No email is sent: share the app link, and the invite is
   claimed when that person signs in with Google using that email.
 - A group always keeps at least one admin.
+
+### Super admins
+
+Emails listed in `SUPER_ADMIN_EMAILS` (Google-verified) can admin every group
+without being a member, and get an "All groups" link to `/super`. They don't
+appear in a group's admin list.
 
 ## Public links
 
